@@ -22,14 +22,11 @@
     <div id="app">
         <b-container>
             <b-jumbotron header="Sonoff Server" lead="config sonoff devices">
-                <b-form-group label="Selecciona el Dispositivo">
-                    <b-form-select v-model="selectDevice" :options="options" class="mb-3" />
-                </b-form-group>
             </b-jumbotron>
             <div>
-                <b-card v-for="(device, index) in devices" title="Informacion de Dispositivos" sub-title="">
+                <b-card v-for="(device, index) in devices" :title="device.name" sub-title="">
                     <p class="card-text">
-                        <b-button v-for="(d, idx) in device" v-on:click="send([index],[idx])" variant="success">{{d.state}}</b-button>                       
+                        <b-button v-on:click="send([index])" variant="success">{{device.state}}</b-button>
                     </p>
                 </b-card>
             </div>
@@ -45,6 +42,7 @@
             config: [{ name: "", type: "", outlet: 0 }, { name: "", type: "", outlet: 1 }, { name: "", type: "", outlet: 2 }, { name: "", type: "", outlet: 3 }],
             selected: 1,
             type: [],
+            firstRun: true,
             options: [],
             selectDevice: 2
         },
@@ -60,8 +58,24 @@
             send(i, idx) {
                 // (isMember ? '$2.00' : '$10.00')
 
-                this.devices[i][idx].state = ((this.devices[i][idx].state == "off") ? 'on' : 'off')
-                axios.get('/devices/' + this.devices[i][idx].device + "/" + this.devices[i][idx].outlet + "/" + this.devices[i][idx].state)
+                //this.devices[i].state = (this.devices[i].state == true) ? 'on' : 'off'
+                let state = ""
+                //this.devices[i].state = (this.devices[i].state == true) ? 'on' : 'off'
+                if (this.firstRun) {
+                    this.devices[i].state = (this.devices[i].state == true) ? false : true;
+                    this.firstRun = false;
+                }
+
+                if (this.devices[i].state == true) {
+                    state = "on";
+                } else if (this.devices[i].state == false) {
+                    state = "off";
+                }
+
+                console.log(this.devices[i].state, state)
+                axios.get('/devices/' + this.devices[i].device + "/" + this.devices[i].outlet + "/" + state)
+                this.devices[i].state = (this.devices[i].state == true) ? false : true
+
 
             },
             saveConfig() {
@@ -82,7 +96,7 @@
         },
         mounted() {
             let that = this
-            axios.get('/devices.json')
+            axios.get('/homekit')
                 .then(function(response) {
                     //that.devices = response.data
                     let ite = response.data
